@@ -4,24 +4,55 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Finger String is an iOS reminder app with an escalation-based notification system. The app ensures reminders can't be ignored by progressively escalating from push notifications to alarms until the user marks them complete or snoozed.
+Finger String is an iOS reminder app with an escalation-based notification system. Reminders progressively escalate from push notifications to alarms until the user marks them complete or snoozed.
 
-## Current Status
+## Tech Stack
 
-This repository is in early planning/specification stage. The README.md contains the full product requirements but no implementation code exists yet.
+- SwiftUI + iOS 17+
+- SwiftData for persistence
+- UNUserNotificationCenter for notifications
+
+## Build & Run
+
+1. Open Xcode and create a new iOS App project named "FingerString"
+2. Copy the contents of `FingerString/` into the project
+3. Build and run on iOS 17+ simulator or device
+
+Note: The project requires notification permissions. Request in Settings if not prompted.
+
+## Architecture
+
+### Models (`Models/`)
+- `Reminder.swift` - Core SwiftData model with title, date, time, state, escalation tracking
+- `EscalationPath.swift` - SwiftData model defining escalation steps (preset or custom)
+- `EscalationStep.swift` - Codable struct for individual steps (type, delay, repeat interval)
+- `ICalSource.swift` - SwiftData model for remote iCal URLs
+
+### Services (`Services/`)
+- `EscalationEngine.swift` - Schedules/cancels notification sequences, handles snooze resume
+- `NotificationManager.swift` - UNUserNotificationCenter wrapper with Complete/Ignore/Snooze actions
+- `ICalParser.swift` - Parses VEVENT components from iCal/ICS files
+- `ICalSyncService.swift` - Fetches and syncs remote iCal sources
+
+### Views (`Views/`)
+- `ReminderListView.swift` - Main list grouped by Active/Upcoming/Closed
+- `CreateReminderView.swift` - Form for new reminders with path picker
+- `ReminderDetailView.swift` - View/edit with action buttons (Complete, Snooze, Ignore)
+- `EscalationPathPickerView.swift` - Preset and custom path selection
+- `SettingsView.swift` - iCal source management
 
 ## Key Concepts
 
 ### Escalation Paths
-Reminders follow configurable escalation paths that increase notification intensity over time (push → push → alarm → repeating alarm). Snoozing resumes from the current step, not from the beginning.
+Preset paths: Gentle, Standard, Urgent, Nuclear. Each defines steps with notification type (push/alarm), delay from trigger time, and optional repeat interval.
 
-### Reminder States
-- **Active**: Currently in an escalation path
-- **Completed**: Marked done (green)
-- **Ignored**: Dismissed without completing (red)
+### Snooze Behavior
+Snoozing reschedules from the **current escalation step**, not from the beginning. Step index is preserved across snooze.
 
 ### iCal Integration
-- Reminders can come from local storage or remote iCal links
-- Local reminders stored in iCal format for shared logic
-- Editing an iCal-sourced reminder creates a local override (original event ID stored to ignore)
-- Editing an active reminder restarts the escalation path
+- Remote iCal sources sync periodically
+- Editing an iCal event creates a local override (original event ID stored in `ignoredEventIds`)
+- Local reminders can be serialized to iCal format via `ICalSerializer`
+
+### iOS Background Limitations
+iOS doesn't allow true background alarms. Strategy: pre-schedule all escalation notifications when reminder activates. Up to 64 notifications per reminder for repeating steps.
