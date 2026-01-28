@@ -38,7 +38,7 @@ The escalation path will go on until you either
 - Mark the reminder as copmlete
 - Snooze the reminder for a given amount of time.
 
-There will be several off-the-shelf escalation paths for the user to choose from, but they can also
+There will be several off-the-shelf escalation paths for the user to choose from, but they can also create their own.
 
 ## Closing a reminder
 
